@@ -15,7 +15,7 @@ local function OnLoad()
 
 	require("better_archeage/better_frames")
 
-	require("better_archeage/abyss_bar")
+	-- require("better_archeage/abyss_bar")
 
 	buffTracker = require("better_archeage/buff_tracker")
 end

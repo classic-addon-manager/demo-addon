@@ -106,7 +106,6 @@ local trackedSettings = {
 	}
 }
 
-
 local function RefreshTracked()
 	for i, v  in ipairs(trackedSettings) do
   	CreateBuffTrackerView(frame, v)
