@@ -5,19 +5,21 @@ local buffTracker
 BA_SETTINGS = nil
 
 local function OnLoad()
-	BA_SETTINGS = require("better_archeage/settings")
+	BA_SETTINGS = require("better-archeage/settings")
 
 	if BA_SETTINGS.useRangeFinder then
-		rangeFinder = require("better_archeage/range_meter")
+		rangeFinder = require("better-archeage/range_meter")
 	end
 
-  speedoMeter = require("better_archeage/speedometer")	
-
-	require("better_archeage/better_frames")
+  if BA_SETTINGS.useSpeedometer then
+  	speedoMeter = require("better-archeage/speedometer")	
+  end
+	require("better-archeage/better_frames")
 
 	-- require("better_archeage/abyss_bar")
-
-	buffTracker = require("better_archeage/buff_tracker")
+  if BA_SETTINGS.useRangeFinder then
+		buffTracker = require("better-archeage/buff_tracker")
+	end
 end
 
 local function OnUnload()
@@ -48,5 +50,5 @@ return {
 	version = "1.0",
 	OnLoad = OnLoad,
 	OnUnload = OnUnload,
-	OnSettingToggle = OnSetting
+	-- OnSettingToggle = OnSetting
 }
