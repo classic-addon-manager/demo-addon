@@ -1,4 +1,4 @@
-local settings = api.GetSettings("better-archeage")
+local settings = api.GetSettings("better_archeage")
 
 local use_range_finder = settings.useRangeFinder or true
 local use_speedometer = settings.useSpeedometer or true
