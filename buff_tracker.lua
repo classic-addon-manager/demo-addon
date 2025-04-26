@@ -1,6 +1,15 @@
 local frame = api.Interface:CreateEmptyWindow("buffTracker")
 frame:Show(true)
 
+local width = api.Interface:GetScreenWidth()
+local height = api.Interface:GetScreenHeight()
+
+local alertLabel = frame:CreateChildWidget("label", "label", 0, true)
+alertLabel:SetText("")
+alertLabel:AddAnchor("TOPLEFT", "UIParent", width / 2, height / 2 - 350)
+alertLabel.style:SetFontSize(32)
+alertLabel:Show(false)
+
 function frame:OnDragStart()
 	if not api.Input:IsShiftKeyDown() then
 		return
@@ -98,10 +107,15 @@ local function CreateBuffTrackerView(frame, settings)
 	if settings.baseColor then
 		tracker:SetColor(settings.baseColor)
 	else
-		tracker:SetColor({70, 100, 66})
+		tracker:SetColor({70, 200, 66})
 	end
 	--buffTimeBar.bg:SetColor(ConvertColor(76), ConvertColor(45), ConvertColor(8), 0.4)
 	buffTimeBar:SetMinMaxValues(0, 100)
+
+	if settings.type == "stack" then
+		buffTimeBar:SetMinMaxValues(0, settings.maxStack)
+	end
+
 	buffTimeBar:AddAnchor("TOPLEFT", tracker, 42, 1)
 	buffTimeBar:AddAnchor("BOTTOMRIGHT", tracker, -1, 1)
 
@@ -120,9 +134,17 @@ local function CreateBuffTrackerView(frame, settings)
 		if maxBuffTime < buff.timeLeft then
 			maxBuffTime = buff.timeLeft
 		end
-		
-		buffTimeBar:SetValue((buff.timeLeft / maxBuffTime) * 100)
-		buffTimeLabel:SetText(string.format("%.1fs", buff.timeLeft / 1000))
+
+		if tracker.settings.type == "stack" then
+			buffTimeBar:SetValue(buff.stack)
+			buffTimeLabel:SetText(string.format("%d/%d", buff.stack, tracker.settings.maxStack))
+		elseif tracker.settings.type == "stack_time" then
+			buffTimeBar:SetValue((buff.timeLeft / maxBuffTime) * 100)
+			buffTimeLabel:SetText(string.format("%d/%d", buff.stack, tracker.settings.maxStack))
+		else
+			buffTimeBar:SetValue((buff.timeLeft / maxBuffTime) * 100)
+			buffTimeLabel:SetText(string.format("%.1fs", buff.timeLeft / 1000))
+		end
 		
 		if buff.timeLeft > 190 then
 			tracker:Show(true)
@@ -132,6 +154,9 @@ local function CreateBuffTrackerView(frame, settings)
 			RepositionTrackers(frame)
 		end
 
+		if tracker.settings.type == "alert" then
+			tracker:Show(false)
+		end
 		-- Compute keyframes
 		if settings.keyframes then
 			for ki, kf  in ipairs(settings.keyframes) do
@@ -218,7 +243,7 @@ local function IsBuffMatchingTracker(buff, tracker)
         return false
     end
     
-    if settings.nameFilter and buffInfo.name ~= settings.nameFilter then
+    if settings.nameFilter and not string.find(string.lower(buffInfo.name), string.lower(settings.nameFilter)) then
         return false
     end
     
@@ -227,9 +252,10 @@ end
 
 local function BuffLoop(trg)
     local buffCount = api.Unit:UnitBuffCount(trg)
+    local debuffCount = api.Unit:UnitDeBuffCount(trg)
     
     -- Hide all trackers for this target type if there are no buffs
-    if buffCount == 0 then
+    if buffCount == 0 and debuffCount == 0 then
         for _, tracker in ipairs(frame.trackers) do
             if tracker.settings.trg == trg and tracker:IsVisible() then
                 tracker:Show(false)
@@ -246,28 +272,43 @@ local function BuffLoop(trg)
         buffsByID[buff.buff_id] = buff
     end
 
-    -- Check each tracker against the buffs
-    for _, tracker in ipairs(frame.trackers) do
-		if tracker.settings.trg == trg then
-        	local settings = tracker.settings
-			
-        	-- If we have an ID filter, we can do a direct lookup
-        	if settings.idFilter and buffsByID[settings.idFilter] then
-        	    tracker:UpdateBuff(buffsByID[settings.idFilter])
-        	else
-        	    -- Otherwise, we need to check each buff
-        	    for _, buff in pairs(buffsByID) do
-        	        if IsBuffMatchingTracker(buff, tracker) then
-        	            tracker:UpdateBuff(buff)
-        	            break
-        	        end
-        	    end
-        	end
-		end
+    for i = 1, debuffCount do
+        local debuff = api.Unit:UnitDeBuff(trg, i)
+        buffsByID[debuff.buff_id] = debuff
     end
+
+    -- Check each tracker against the buffs
+    local hasAlert = false
+    for _, tracker in ipairs(frame.trackers) do
+        local settings = tracker.settings
+        
+        -- If we have an ID filter, we can do a direct lookup
+        if settings.idFilter and buffsByID[settings.idFilter] then
+            tracker:UpdateBuff(buffsByID[settings.idFilter])
+            if settings.alert then
+                hasAlert = true
+            end
+        else
+            -- Otherwise, we need to check each buff
+            for _, buff in pairs(buffsByID) do
+                if IsBuffMatchingTracker(buff, tracker) then
+                    tracker:UpdateBuff(buff)
+                    if settings.alert then
+						alertLabel:SetText(settings.alert)
+                        hasAlert = true
+                    end
+                    break
+                end
+            end
+        end
+    end
+    
+    -- Show/hide alert label based on active alert trackers
+    alertLabel:Show(hasAlert)
 end
 
 local updateTime = 0
+local cleanupTick = 0
 
 local function OnUpdate(dt)
 	updateTime = updateTime + dt
