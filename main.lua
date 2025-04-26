@@ -47,7 +47,7 @@ return {
 	name = "Better ArcheAge",
 	desc = "A suite of improvements to the game",
 	author = "Aguru",
-	version = "1.0",
+	version = "1.1",
 	OnLoad = OnLoad,
 	OnUnload = OnUnload,
 	-- OnSettingToggle = OnSetting
