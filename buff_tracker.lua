@@ -1,8 +1,11 @@
 local frame = api.Interface:CreateEmptyWindow("buffTracker")
 frame:Show(true)
 
-local width = api.Interface:GetScreenWidth()
-local height = api.Interface:GetScreenHeight()
+local width = api.Interface:GetScreenWidth() or 2560
+local height = api.Interface:GetScreenHeight() or 1080
+
+-- local width = 2560
+-- local height = 1080
 
 local alertLabel = frame:CreateChildWidget("label", "label", 0, true)
 alertLabel:SetText("")
@@ -131,7 +134,7 @@ local function CreateBuffTrackerView(frame, settings)
 
 	function tracker:UpdateBuff(buff)
 		F_SLOT.SetIconBackGround(buffIcon, buff.path)
-		if maxBuffTime < buff.timeLeft then
+		if buff.timeLeft ~= nil and maxBuffTime < buff.timeLeft then
 			maxBuffTime = buff.timeLeft
 		end
 
@@ -141,12 +144,15 @@ local function CreateBuffTrackerView(frame, settings)
 		elseif tracker.settings.type == "stack_time" then
 			buffTimeBar:SetValue((buff.timeLeft / maxBuffTime) * 100)
 			buffTimeLabel:SetText(string.format("%d/%d", buff.stack, tracker.settings.maxStack))
+		elseif buff.timeLeft == nil then
+			buffTimeBar:SetValue(100)
+			buffTimeLabel:SetText("Active")
 		else
 			buffTimeBar:SetValue((buff.timeLeft / maxBuffTime) * 100)
 			buffTimeLabel:SetText(string.format("%.1fs", buff.timeLeft / 1000))
 		end
 		
-		if buff.timeLeft > 190 then
+		if (buff.timeLeft ~= nil and buff.timeLeft > 190) or buff.timeLeft == nil then
 			tracker:Show(true)
 			RepositionTrackers(frame)
 		else
@@ -254,7 +260,6 @@ local function BuffLoop(trg)
     local buffCount = api.Unit:UnitBuffCount(trg)
     local debuffCount = api.Unit:UnitDeBuffCount(trg)
     
-    -- Hide all trackers for this target type if there are no buffs
     if buffCount == 0 and debuffCount == 0 then
         for _, tracker in ipairs(frame.trackers) do
             if tracker.settings.trg == trg and tracker:IsVisible() then
@@ -265,7 +270,6 @@ local function BuffLoop(trg)
         return
     end
 
-    -- Create a lookup table for buffs by ID for O(1) access
     local buffsByID = {}
     for i = 1, buffCount do
         local buff = api.Unit:UnitBuff(trg, i)
@@ -277,33 +281,51 @@ local function BuffLoop(trg)
         buffsByID[debuff.buff_id] = debuff
     end
 
-    -- Check each tracker against the buffs
     local hasAlert = false
     for _, tracker in ipairs(frame.trackers) do
         local settings = tracker.settings
         
-        -- If we have an ID filter, we can do a direct lookup
-        if settings.idFilter and buffsByID[settings.idFilter] then
-            tracker:UpdateBuff(buffsByID[settings.idFilter])
-            if settings.alert then
-                hasAlert = true
-            end
-        else
-            -- Otherwise, we need to check each buff
-            for _, buff in pairs(buffsByID) do
-                if IsBuffMatchingTracker(buff, tracker) then
-                    tracker:UpdateBuff(buff)
-                    if settings.alert then
-						alertLabel:SetText(settings.alert)
-                        hasAlert = true
-                    end
-                    break
+        if settings.trg == trg then
+            local foundBuff = false
+            
+            if settings.idFilter and buffsByID[settings.idFilter] then
+                tracker:UpdateBuff(buffsByID[settings.idFilter])
+                foundBuff = true
+                if settings.alert then
+                    hasAlert = true
                 end
+            else
+                for _, buff in pairs(buffsByID) do
+                    if IsBuffMatchingTracker(buff, tracker) then
+                        tracker:UpdateBuff(buff)
+                        foundBuff = true
+                        if settings.alert then
+							if settings.baseColor then
+								local color = settings.baseColor
+								if color:sub(1,1) == "#" then
+									color = color:sub(2)
+								end
+								
+								local r = tonumber(color:sub(1,2), 16) or 255
+								local g = tonumber(color:sub(3,4), 16) or 255
+								local b = tonumber(color:sub(5,6), 16) or 255
+								alertLabel.style:SetColor(r/255, g/255, b/255, 1)
+							end
+							alertLabel:SetText(settings.alert)
+                            hasAlert = true
+                        end
+                        break
+                    end
+                end
+            end
+            
+            if not foundBuff and tracker:IsVisible() then
+                tracker:Show(false)
+                tracker:Reset()
             end
         end
     end
     
-    -- Show/hide alert label based on active alert trackers
     alertLabel:Show(hasAlert)
 end
 
@@ -313,13 +335,12 @@ local cleanupTick = 0
 local function OnUpdate(dt)
 	updateTime = updateTime + dt
 
-	if updateTime < 0.1 then
+	if updateTime < 100 then
 		return
 	end
 
 	updateTime = 0
 
-	-- Find all trackers and their target then loop over all tracker targets but only once per target type
 	local trackers = frame.trackers
 	local targets = {}
 	for _, tracker in ipairs(trackers) do

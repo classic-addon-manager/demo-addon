@@ -1,7 +1,7 @@
 local rangeFinder
 local speedoMeter
 local buffTracker 
-
+local buffTrackerConfig
 BA_SETTINGS = nil
 
 local function OnLoad()
@@ -19,6 +19,7 @@ local function OnLoad()
 	-- require("better_archeage/abyss_bar")
   if BA_SETTINGS.useRangeFinder then
 		buffTracker = require("better-archeage/buff_tracker")
+		buffTrackerConfig = require("better-archeage/buff_tracker_config")
 	end
 end
 
@@ -37,18 +38,25 @@ local function OnUnload()
 		buffTracker:Show(false)
 		buffTracker = nil
 	end
+
+	if buffTrackerConfig ~= nil then
+		buffTrackerConfig:Show(false)
+		buffTrackerConfig = nil
+	end
 end
 
 local function OnSetting()
-	api.Log:Info("OnSetting!!")
+	if buffTrackerConfig ~= nil then
+		buffTrackerConfig:Show(true)
+	end
 end
 
 return {
 	name = "Better ArcheAge",
 	desc = "A suite of improvements to the game",
 	author = "Aguru",
-	version = "1.2.1",
+	version = "1.3.0",
 	OnLoad = OnLoad,
 	OnUnload = OnUnload,
-	-- OnSettingToggle = OnSetting
+	OnSettingToggle = OnSetting
 }
