@@ -1,34 +1,48 @@
-local settings = api.GetSettings("better_archeage")
+-- Load settings from settings.txt
+local settingsData = api.File:Read("better-archeage/settings.txt")
 
-local use_range_finder = settings.useRangeFinder or true
-local use_speedometer = settings.useSpeedometer or true
-local use_buffTracker = settings.useBufftracker or true
-
-local range_finder_size = settings.rangeFinderFont or 14
-
-
-
-settings.useRangeFinder = use_range_finder
-settings.rangeFinderFont = range_finder_size
-settings.useSpeedometer = use_speedometer
-settings.useBufftracker = use_buffTracker
-
-settings.s_options = {
-	rangeFinderFont = {
-		titleStr = "Range Finder Font Size",
-		controlStr = { "12", "20"}
-	},
-	useRangeFinder = {
-		titleStr = "Use Range Finder"
-	},
-	useSpeedometer = {
-		titleStr = "Use Speedometer"
-	},
-	useBufftracker = {
-		titleStr = "Use Buff Tracker"
-	}
+-- Default values
+local settings = {
+	useRangeFinder = true,
+	useSpeedometer = true,
+	useBufftracker = true,
+	rangeFinderFont = 14,
+	enableLargeHPMP = true,
+	enableGuildName = true,
+	enableGearScore = true
 }
 
 
-api.SaveSettings()
+-- Load from settings.txt if it exists
+if settingsData then
+	if settingsData.buffTrackers then
+		api.Log:Info("New settings format loaded")
+		-- New format with settings
+		-- Use explicit nil checks to preserve false values
+		if settingsData.useRangeFinder ~= nil then
+			settings.useRangeFinder = settingsData.useRangeFinder
+		end
+		if settingsData.useSpeedometer ~= nil then
+			settings.useSpeedometer = settingsData.useSpeedometer
+		end
+		if settingsData.useBufftracker ~= nil then
+			settings.useBufftracker = settingsData.useBufftracker
+		end
+		if settingsData.rangeFinderFont ~= nil then
+			settings.rangeFinderFont = settingsData.rangeFinderFont
+		end
+		if settingsData.enableLargeHPMP ~= nil then
+			settings.enableLargeHPMP = settingsData.enableLargeHPMP
+		end
+		if settingsData.enableGuildName ~= nil then
+			settings.enableGuildName = settingsData.enableGuildName
+		end
+		if settingsData.enableGearScore ~= nil then
+			settings.enableGearScore = settingsData.enableGearScore
+		end
+	elseif type(settingsData) == "table" and #settingsData > 0 and settingsData[1].nameFilter then
+		-- Old format (just array), keep defaults
+	end
+end
+
 return settings

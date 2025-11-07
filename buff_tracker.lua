@@ -220,12 +220,35 @@ local defaultTrackedSettings = {
 
 local position = { 400, 100}
 
-local trackedSettings = api.File:Read("better-archeage/settings.txt")
+local settingsData = api.File:Read("better-archeage/settings.txt")
 local savedPosition = api.File:Read("better-archeage/position.txt")
 
-if trackedSettings == nil then
+local trackedSettings = defaultTrackedSettings
+
+if settingsData then
+	if settingsData.buffTrackers then
+		-- New format with settings
+		trackedSettings = settingsData.buffTrackers
+	elseif type(settingsData) == "table" and #settingsData > 0 and settingsData[1].nameFilter then
+		-- Old format (just array)
+		trackedSettings = settingsData
+	end
+end
+
+if trackedSettings == nil or #trackedSettings == 0 then
 	trackedSettings = defaultTrackedSettings
-	api.File:Write("better-archeage/settings.txt", defaultTrackedSettings)
+	-- Save in new format
+	local settingsToSave = {
+		buffTrackers = defaultTrackedSettings,
+		enableLargeHPMP = true,
+		enableGuildName = true,
+		enableGearScore = true,
+		useRangeFinder = true,
+		useSpeedometer = true,
+		useBufftracker = true,
+		rangeFinderFont = 14
+	}
+	api.File:Write("better-archeage/settings.txt", settingsToSave)
 end
 
 if savedPosition == nil then

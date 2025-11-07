@@ -1,13 +1,125 @@
 local configFrame = nil
 
 function CreateBuffTrackerConfigWindow()
-	local frame = api.Interface:CreateWindow("buffTrackerConfig", "Buff Tracker Config")
+	local frame = api.Interface:CreateWindow("buffTrackerConfig", "Better ArcheAge Settings")
 	frame:Show(false)
 	frame:AddAnchor("TOPLEFT", "UIParent", 100, 100)
 
+	-- Load settings from settings.txt
+	local settingsData = api.File:Read("better-archeage/settings.txt")
+	local enableLargeHPMP = true
+	local enableGuildName = true
+	local enableGearScore = true
+	local enableRangeFinder = true
+	local enableSpeedometer = true
+	local enableBuffTracker = true
+	
+	-- Handle both old format (array) and new format (table with settings)
+	if settingsData then
+		if settingsData.buffTrackers then
+			-- New format with settings
+			-- Use explicit nil checks to preserve false values
+			if settingsData.enableLargeHPMP ~= nil then
+				enableLargeHPMP = settingsData.enableLargeHPMP
+			end
+			if settingsData.enableGuildName ~= nil then
+				enableGuildName = settingsData.enableGuildName
+			end
+			if settingsData.enableGearScore ~= nil then
+				enableGearScore = settingsData.enableGearScore
+			end
+			if settingsData.useRangeFinder ~= nil then
+				enableRangeFinder = settingsData.useRangeFinder
+			end
+			if settingsData.useSpeedometer ~= nil then
+				enableSpeedometer = settingsData.useSpeedometer
+			end
+			if settingsData.useBufftracker ~= nil then
+				enableBuffTracker = settingsData.useBufftracker
+			end
+		elseif type(settingsData) == "table" and #settingsData > 0 and settingsData[1].nameFilter then
+			-- Old format (just array), keep defaults
+		end
+	end
+
+	-- Create checkboxes for general settings
+	local checkboxY = 50
+	local checkboxSpacing = 25
+
+	-- Helper function to create checkbutton with background
+	local function CreateCheckButtonWithLabel(parent, id, text, yPos)
+		local checkbox = api.Interface:CreateWidget("checkbutton", id, parent)
+		checkbox:SetExtent(18, 17)
+		checkbox:AddAnchor("TOPLEFT", parent, 10, yPos)
+		
+		-- Create background drawables for checkbutton states
+		local bg1 = checkbox:CreateImageDrawable("ui/button/check_button.dds", "background")
+		bg1:SetExtent(18, 17)
+		bg1:AddAnchor("CENTER", checkbox, 0, 0)
+		bg1:SetCoords(0, 0, 18, 17)
+		checkbox:SetNormalBackground(bg1)
+		
+		local bg2 = checkbox:CreateImageDrawable("ui/button/check_button.dds", "background")
+		bg2:SetExtent(18, 17)
+		bg2:AddAnchor("CENTER", checkbox, 0, 0)
+		bg2:SetCoords(0, 0, 18, 17)
+		checkbox:SetHighlightBackground(bg2)
+		
+		local bg3 = checkbox:CreateImageDrawable("ui/button/check_button.dds", "background")
+		bg3:SetExtent(18, 17)
+		bg3:AddAnchor("CENTER", checkbox, 0, 0)
+		bg3:SetCoords(0, 0, 18, 17)
+		checkbox:SetPushedBackground(bg3)
+		
+		local bg4 = checkbox:CreateImageDrawable("ui/button/check_button.dds", "background")
+		bg4:SetExtent(18, 17)
+		bg4:AddAnchor("CENTER", checkbox, 0, 0)
+		bg4:SetCoords(0, 17, 18, 17)
+		checkbox:SetDisabledBackground(bg4)
+		
+		local bg5 = checkbox:CreateImageDrawable("ui/button/check_button.dds", "background")
+		bg5:SetExtent(18, 17)
+		bg5:AddAnchor("CENTER", checkbox, 0, 0)
+		bg5:SetCoords(18, 0, 18, 17)
+		checkbox:SetCheckedBackground(bg5)
+		
+		local bg6 = checkbox:CreateImageDrawable("ui/button/check_button.dds", "background")
+		bg6:SetExtent(18, 17)
+		bg6:AddAnchor("CENTER", checkbox, 0, 0)
+		bg6:SetCoords(18, 17, 18, 17)
+		checkbox:SetDisabledCheckedBackground(bg6)
+		
+		local label = parent:CreateChildWidget("label", id .. "Label", 0, true)
+		label:SetText(text)
+		label:AddAnchor("LEFT", checkbox, "RIGHT", 0, 0)
+		label.style:SetFontSize(12)
+        label.style:SetColor(0, 0, 0, 1)
+        label.style:SetAlign(ALIGN.LEFT)
+		
+		return checkbox, label
+	end
+
+	local largeHPMPCheckbox, largeHPMPLabel = CreateCheckButtonWithLabel(frame, "largeHPMPCheckbox", "Enable large HP /MP on health bars", checkboxY)
+	largeHPMPCheckbox:SetChecked(enableLargeHPMP)
+
+	local guildNameCheckbox, guildNameLabel = CreateCheckButtonWithLabel(frame, "guildNameCheckbox", "Enable Guild Name on health bars", checkboxY + checkboxSpacing)
+	guildNameCheckbox:SetChecked(enableGuildName)
+
+	local gearScoreCheckbox, gearScoreLabel = CreateCheckButtonWithLabel(frame, "gearScoreCheckbox", "Enable GearScore on Health Bars", checkboxY + checkboxSpacing * 2)
+	gearScoreCheckbox:SetChecked(enableGearScore)
+
+	local rangeFinderCheckbox, rangeFinderLabel = CreateCheckButtonWithLabel(frame, "rangeFinderCheckbox", "Enable Range Finder", checkboxY + checkboxSpacing * 3)
+	rangeFinderCheckbox:SetChecked(enableRangeFinder)
+
+	local speedometerCheckbox, speedometerLabel = CreateCheckButtonWithLabel(frame, "speedometerCheckbox", "Enable speedoMeter", checkboxY + checkboxSpacing * 4)
+	speedometerCheckbox:SetChecked(enableSpeedometer)
+
+	local buffTrackerCheckbox, buffTrackerLabel = CreateCheckButtonWithLabel(frame, "buffTrackerCheckbox", "Use Buff Tracker", checkboxY + checkboxSpacing * 5)
+	buffTrackerCheckbox:SetChecked(enableBuffTracker)
+
 	local list = W_CTRL.CreatePageScrollListCtrl("adList", frame)
 	list:Show(true)
-	list:AddAnchor("TOPLEFT", frame, 4, 44 + 10 / 2)
+	list:AddAnchor("TOPLEFT", frame, 4, checkboxY + checkboxSpacing * 6 + 10)
 	list:AddAnchor("BOTTOMRIGHT", frame, 0, -45)
 
     local NameSetFunc = function(subItem, data, setValue)
@@ -47,11 +159,11 @@ function CreateBuffTrackerConfigWindow()
     local ExtraDataSetFunc = function(subItem, data, setValue)
         if setValue then
             if data["type"] == "stack" then
-                subItem.textbox:SetText("" .. data["maxStack"])
+                subItem.textbox:SetText(tostring(data["maxStack"] or ""))
             elseif data["type"] == "stack_time" then
-                subItem.textbox:SetText("" .. data["maxStack"])
+                subItem.textbox:SetText(tostring(data["maxStack"] or ""))
             elseif data["type"] == "alert" then
-                subItem.textbox:SetText(data["alert"])
+                subItem.textbox:SetText(tostring(data["alert"] or ""))
             end
         else
             subItem.textbox:SetText("")
@@ -74,7 +186,7 @@ function CreateBuffTrackerConfigWindow()
     local TypeColumnLayoutSetFunc = function(frame, rowIndex, colIndex, subItem)
         local sortCombobox = W_CTRL.CreateComboBox(subItem)
         sortCombobox:SetWidth(105)
-        sortCombobox:AddAnchor("BOTTOMRIGHT", subItem, "TOPRIGHT", 0, 35)
+        sortCombobox:AddAnchor("BOTTOMRIGHT", subItem, "TOPRIGHT", 0, 29)
         sortCombobox.dropdownItem = {
           "default",
           "stack",
@@ -89,7 +201,7 @@ function CreateBuffTrackerConfigWindow()
     local TargetColumnLayoutSetFunc = function(frame, rowIndex, colIndex, subItem)
         local targetCombobox = W_CTRL.CreateComboBox(subItem)
         targetCombobox:SetWidth(105)
-        targetCombobox:AddAnchor("BOTTOMRIGHT", subItem, "TOPRIGHT", -10, 36)
+        targetCombobox:AddAnchor("BOTTOMRIGHT", subItem, "TOPRIGHT", -10, 29)
         targetCombobox.dropdownItem = {
             "player",
             "target"
@@ -194,7 +306,7 @@ function CreateBuffTrackerConfigWindow()
             end
             
             -- Save to file
-            api.File:Write("better-archeage/settings.txt", finalConfig)
+            SaveSettingsToFile(finalConfig)
             
             -- Clear and reload the list
             list:DeleteAllDatas()
@@ -216,8 +328,45 @@ function CreateBuffTrackerConfigWindow()
 
     frame.list = list
 
+    local function SaveSettingsToFile(configData)
+        -- Load existing settings to preserve values not in the UI
+        local existingSettings = api.File:Read("better-archeage/settings.txt")
+        
+        local settingsToSave = {
+            buffTrackers = configData,
+            enableLargeHPMP = largeHPMPCheckbox:GetChecked(),
+            enableGuildName = guildNameCheckbox:GetChecked(),
+            enableGearScore = gearScoreCheckbox:GetChecked(),
+            useRangeFinder = rangeFinderCheckbox:GetChecked(),
+            useSpeedometer = speedometerCheckbox:GetChecked(),
+            useBufftracker = buffTrackerCheckbox:GetChecked()
+        }
+        
+
+        if existingSettings then
+            if existingSettings.rangeFinderFont then
+                settingsToSave.rangeFinderFont = existingSettings.rangeFinderFont
+            end
+            if existingSettings.useBufftracker ~= nil then
+                settingsToSave.useBufftracker = existingSettings.useBufftracker
+            end
+        end
+        
+        api.File:Write("better-archeage/settings.txt", settingsToSave)
+    end
+
     function frame:UpdateTrackerList()
-        local config = api.File:Read("better-archeage/settings.txt")
+        local settingsData = api.File:Read("better-archeage/settings.txt")
+        local config = {}
+        
+        if settingsData then
+            if settingsData.buffTrackers then
+                config = settingsData.buffTrackers
+            elseif type(settingsData) == "table" and #settingsData > 0 and settingsData[1].nameFilter then
+                -- Old format (just array)
+                config = settingsData
+            end
+        end
 
         for k, v in ipairs(config) do
             list:InsertData(k, 1, v)
@@ -330,7 +479,7 @@ function CreateBuffTrackerConfigWindow()
         table.insert(configData, newEntry)
         
         -- Save to file
-        api.File:Write("better-archeage/settings.txt", configData)
+        SaveSettingsToFile(configData)
         
         -- Clear and reload the list
         list:DeleteAllDatas()
@@ -427,8 +576,9 @@ function CreateBuffTrackerConfigWindow()
             end
         end
         
-        -- Save to file
-        api.File:Write("better-archeage/settings.txt", configData)
+        -- Save buff tracker config and checkbox settings to file
+        SaveSettingsToFile(configData)
+        
         api.Log:Info("Buff tracker settings saved!")
     end
     saveButton:SetHandler("OnClick", saveButton.OnClick)
