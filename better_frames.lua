@@ -51,39 +51,36 @@ local function FixBigFrame(frame)
     	        return
     	    end
 
-			local unitId = api.Unit:GetUnitId(frame.target)
-			local unitInfo = api.Unit:GetUnitInfoById(unitId)
+			--local unitId = api.Unit:GetUnitId(frame.target)
+			--local unitInfo = api.Unit:GetUnitInfoById(unitId)
 
-			local name = unitInfo.name
-			if unitInfo ~= nil then
-				-- Update Guild Name if enabled
-				if BA_SETTINGS.enableGuildName and frame.expeditionName then
-					if unitInfo.type == "character" and unitInfo.expeditionName ~= nil then
-						frame.expeditionName:Show(true)
-						frame.expeditionName:SetText("<" .. unitInfo.expeditionName .. ">")
-					else
-						frame.expeditionName:Show(false)
-						frame.expeditionName:SetText("")
-					end
-				end
-				
-				-- Update GearScore if enabled
-				if BA_SETTINGS.enableGearScore and frame.gearScore then
-					if unitInfo.type == "character" then
-						local unitGearscore = api.Unit:UnitGearScore(frame.target)
-						if unitGearscore ~= nil then
-							frame.gearScore:Show(true)
-							frame.gearScore:SetText(unitGearscore.."gs")
-						else
-							frame.gearScore:Show(false)
-							frame.gearScore:SetText("")
-						end
-					else
-						frame.gearScore:Show(false)
-						frame.gearScore:SetText("")
-					end
+			if BA_SETTINGS.enableGearScore and frame.gearScore then
+				local unitGearscore = api.Unit:UnitGearScore(frame.target)
+				if unitGearscore ~= nil then
+					frame.gearScore:Show(true)
+					frame.gearScore:SetText(unitGearscore.."gs")
+				else
+					frame.gearScore:Show(false)
+					frame.gearScore:SetText("")
 				end
 			end
+
+			local name = api.Unit:UnitName(frame.target)
+			--if unitInfo ~= nil then
+				-- Update Guild Name if enabled
+				--if BA_SETTINGS.enableGuildName and frame.expeditionName then
+				--	if unitInfo.type == "character" and unitInfo.expeditionName ~= nil then
+				--		frame.expeditionName:Show(true)
+				--		frame.expeditionName:SetText("<" .. unitInfo.expeditionName .. ">")
+				--	else
+				--		frame.expeditionName:Show(false)
+				--		frame.expeditionName:SetText("")
+				--	end
+				--end
+				
+				-- Update GearScore if enabled
+				
+			--end
 
     	    frame.name:SetText(name)
 		end
